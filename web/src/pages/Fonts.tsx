@@ -93,6 +93,8 @@ function Upload({ onUploaded }: { onUploaded: () => Promise<void> }) {
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    // currentTarget fica nulo depois do primeiro await, por isso guardamos o formulário antes.
+    const formEl = e.currentTarget;
     if (!file) return;
     setBusy(true);
     setMessage(null);
@@ -104,7 +106,7 @@ function Upload({ onUploaded }: { onUploaded: () => Promise<void> }) {
       setMessage({ ok: true, text: `Fonte ${r.font.family} ${r.font.style} cadastrada.` });
       setFile(null);
       setConfirmed(false);
-      e.currentTarget.reset();
+      formEl.reset();
       await onUploaded();
     } catch (err) {
       setMessage({ ok: false, text: errorMessage(err) });
