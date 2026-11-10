@@ -15,6 +15,7 @@ export interface Config {
   allowedOrigins: string[];
   trustProxy: boolean;
   maxFontBytes: number;
+  maxImageBytes: number;
   /** Tentativas de login por minuto, por IP. */
   loginRateLimit: number;
   bootstrapAdmin: { email: string; password: string; name: string } | null;
@@ -53,6 +54,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       .filter(Boolean),
     trustProxy: bool(env.TRUST_PROXY, false),
     maxFontBytes: int(env.MAX_FONT_BYTES, 5_000_000, 'MAX_FONT_BYTES'),
+    maxImageBytes: int(env.MAX_IMAGE_BYTES, 25_000_000, 'MAX_IMAGE_BYTES'),
     loginRateLimit: int(env.LOGIN_RATE_LIMIT, 10, 'LOGIN_RATE_LIMIT'),
     bootstrapAdmin:
       adminEmail && adminPassword

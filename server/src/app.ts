@@ -8,7 +8,9 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { resolveSession, SESSION_COOKIE } from './auth.js';
 import type { Config } from './config.js';
 import type { Pool } from './db.js';
+import { registerAssetRoutes } from './routes/assets.js';
 import { registerAuthRoutes } from './routes/auth.js';
+import { registerExportRoutes } from './routes/export.js';
 import { registerFontRoutes } from './routes/fonts.js';
 import { registerProjectRoutes } from './routes/projects.js';
 import { registerSystemRoutes } from './routes/system.js';
@@ -31,7 +33,7 @@ export async function buildApp(ctx: AppContext, options: { logger?: boolean } = 
 
   await app.register(fastifyCookie);
   await app.register(fastifyRateLimit, { global: false });
-  await app.register(fastifyMultipart, { limits: { fileSize: config.maxFontBytes, files: 1, fields: 10 } });
+  await app.register(fastifyMultipart, { limits: { fileSize: Math.max(config.maxFontBytes, config.maxImageBytes), files: 1, fields: 10 } });
 
   app.decorateRequest('user', null);
   app.decorateRequest('sessionToken', null);
@@ -86,6 +88,8 @@ export async function buildApp(ctx: AppContext, options: { logger?: boolean } = 
   registerUserRoutes(app, ctx);
   registerProjectRoutes(app, ctx);
   registerFontRoutes(app, ctx);
+  registerAssetRoutes(app, ctx);
+  registerExportRoutes(app, ctx);
   registerSystemRoutes(app, ctx);
 
   // Front-end compilado (produção / Docker), com fallback para o roteador do React.

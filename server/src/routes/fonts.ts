@@ -82,6 +82,9 @@ export function registerFontRoutes(app: FastifyInstance, { pool, config }: AppCo
     }
 
     if (!file) return reply.code(400).send({ error: 'invalid_request', message: 'Selecione um arquivo de fonte.' });
+    if (file.data.length > config.maxFontBytes) {
+      return reply.code(413).send({ error: 'file_too_large', message: 'O arquivo é maior que o limite permitido.' });
+    }
     if (fields.licenseConfirmed !== 'true') {
       return reply.code(400).send({ error: 'license_required', message: 'Confirme que você tem licença para usar esta fonte.' });
     }

@@ -48,14 +48,19 @@ function pickName(font: Font, ...keys: string[]): string | undefined {
   return undefined;
 }
 
+/** Lê uma fonte TTF/OTF/WOFF com o opentype.js. */
+export function parseFont(buf: Buffer): Font {
+  const ab = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer;
+  return opentype.parse(ab);
+}
+
 /** Valida o arquivo e extrai os metadados. Lança FontError com mensagem em português. */
 export function inspectFont(buf: Buffer): FontInfo {
   const format = sniffFontFormat(buf);
 
   let font: Font;
   try {
-    const ab = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer;
-    font = opentype.parse(ab);
+    font = parseFont(buf);
   } catch {
     throw new FontError('Não foi possível ler a fonte. O arquivo pode estar corrompido.');
   }

@@ -191,7 +191,14 @@ describe.skipIf(!TEST_DATABASE_URL)('API (precisa de TEST_DATABASE_URL)', () => 
 
   describe('projetos', () => {
     const newProject = (cookie: string, extra: Record<string, unknown> = {}) =>
-      call('POST', '/api/projects', cookie, { name: 'ACSO - Prêmio', client: 'ACSO', kind: 'basic', formatId: 'billboard', ...extra });
+      call('POST', '/api/projects', cookie, {
+        name: 'ACSO - Prêmio',
+        client: 'ACSO',
+        subject: 'Prêmio Melhores do Ano',
+        kind: 'basic',
+        formatId: 'billboard',
+        ...extra,
+      });
 
     it('segue a matriz de permissões', async () => {
       const designer = await userSession(env, 'designer');
@@ -216,9 +223,11 @@ describe.skipIf(!TEST_DATABASE_URL)('API (precisa de TEST_DATABASE_URL)', () => 
       const designer = await userSession(env, 'designer');
       const bill = await newProject(designer);
       expect(bill.json().document.canvas).toMatchObject({ width: 970, height: 250 });
-      expect(bill.json().project).toMatchObject({ formatId: 'billboard', width: 970, height: 250, version: 1 });
+      expect(bill.json().project).toMatchObject({ formatId: 'billboard', width: 970, height: 250, version: 1, media: 'avulsa' });
 
       expect((await newProject(designer, { formatId: 'nao-existe' })).statusCode).toBe(400);
+      expect((await newProject(designer, { client: '' })).statusCode).toBe(400);
+      expect((await newProject(designer, { subject: undefined })).statusCode).toBe(400);
       expect((await newProject(designer, { formatId: 'custom' })).statusCode).toBe(400);
       expect((await newProject(designer, { formatId: 'custom', width: 8, height: 8 })).statusCode).toBe(400);
       const custom = await newProject(designer, { formatId: 'custom', kind: 'advanced', width: 640, height: 480 });
@@ -264,6 +273,16 @@ describe.skipIf(!TEST_DATABASE_URL)('API (precisa de TEST_DATABASE_URL)', () => 
       });
       expect(ghost.statusCode).toBe(422);
       expect(ghost.json().issues[0].code).toBe('unknown_slide');
+    });
+
+    it('mídia de divulgação usa só os três formatos e não tem assunto', async () => {
+      const designer = await userSession(env, 'designer');
+      const ok = await newProject(designer, { media: 'divulgacao', subject: undefined, formatId: 'retangulo-medio' });
+      expect(ok.statusCode).toBe(201);
+      expect(ok.json().project).toMatchObject({ media: 'divulgacao', subject: null });
+      expect((await newProject(designer, { media: 'divulgacao', subject: undefined, formatId: 'maxiboard' })).statusCode).toBe(400);
+      expect((await newProject(designer, { media: 'divulgacao', subject: undefined, formatId: 'custom', width: 640, height: 480 })).statusCode).toBe(400);
+      expect((await newProject(designer, { media: 'divulgacao', formatId: 'billboard' })).statusCode).toBe(400);
     });
 
     it('filtra a lista por tipo e busca', async () => {
@@ -360,7 +379,7 @@ describe.skipIf(!TEST_DATABASE_URL)('API (precisa de TEST_DATABASE_URL)', () => 
 
       expect((await call('DELETE', `/api/fonts/${font.id}`, designer)).statusCode).toBe(403);
 
-      const { project, document } = (await call('POST', '/api/projects', designer, { name: 'P', kind: 'basic', formatId: 'billboard' })).json();
+      const { project, document } = (await call('POST', '/api/projects', designer, { name: 'P', client: 'ACSO', subject: 'Teste', kind: 'basic', formatId: 'billboard' })).json();
       document.layers = [{ ...ghostLayer(), type: 'text', slideId: document.slides[0].id, fontId: font.id, text: 'Oi', fontSize: 20, fontWeight: 400, color: '#000000', lineHeight: 1.2, letterSpacing: 0, align: 'left', animateBy: 'none' }];
       const saved = await call('PUT', `/api/projects/${project.id}`, designer, { version: 1, document });
       expect(saved.statusCode).toBe(200);

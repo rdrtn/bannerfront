@@ -63,18 +63,29 @@ export async function userSession(env: TestEnv, role: string, email = `${role}@t
   return login(env.app, email);
 }
 
+interface PathLike {
+  moveTo(x: number, y: number): void;
+  lineTo(x: number, y: number): void;
+  close(): void;
+}
+
 interface FontCtor {
   Font: new (opts: Record<string, unknown>) => { toArrayBuffer(): ArrayBuffer };
   Glyph: new (opts: Record<string, unknown>) => unknown;
-  Path: new () => unknown;
+  Path: new () => PathLike;
 }
 
 /** Gera uma fonte TTF/OTF mínima e válida, só para os testes. */
 export function makeTestFont(family: string, style = 'Regular', extra: Record<string, unknown> = {}): Buffer {
   const ot = opentype as unknown as FontCtor;
+  const triangle = new ot.Path();
+  triangle.moveTo(0, 0);
+  triangle.lineTo(300, 700);
+  triangle.lineTo(600, 0);
+  triangle.close();
   const glyphs = [
     new ot.Glyph({ name: '.notdef', unicode: 0, advanceWidth: 650, path: new ot.Path() }),
-    new ot.Glyph({ name: 'A', unicode: 65, advanceWidth: 600, path: new ot.Path() }),
+    new ot.Glyph({ name: 'A', unicode: 65, advanceWidth: 600, path: triangle }),
   ];
   const font = new ot.Font({
     familyName: family,
