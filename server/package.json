@@ -1,0 +1,30 @@
+{
+  "name": "@bannerfront/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsup",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@bannerfront/shared": "*",
+    "@fastify/cookie": "^11.1.5",
+    "@fastify/multipart": "^10.1.8",
+    "@fastify/rate-limit": "^11.2.2",
+    "@fastify/static": "^10.1.10",
+    "fastify": "^5.12.8",
+    "opentype.js": "^2.0.0",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/pg": "^8.23.1",
+    "tsup": "^9.0.0",
+    "tsx": "^4.23.15",
+    "vitest": "^5.1.0"
+  }
+}
