@@ -10,6 +10,7 @@ import { Users } from './pages/Users';
 import { System } from './pages/System';
 import { Account } from './pages/Account';
 import { Creatives } from './pages/Creatives';
+import { Editor } from './editor/Editor';
 
 function Guard({ permission, children }: { permission: Permission; children: ReactNode }) {
   const { can } = useAuth();
@@ -28,6 +29,7 @@ export function App() {
 
   return (
     <Routes>
+      <Route path="projetos/:id" element={<Guard permission="projects:read"><Editor /></Guard>} />
       <Route element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="projetos" element={<Guard permission="projects:read"><Projects /></Guard>} />

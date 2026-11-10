@@ -7,7 +7,7 @@ Sistema web para criar **display ads em HTML5** e **vídeos MP4** (pré-roll), e
 
 São duas ferramentas de criação: **Modo Básico** (telas/camadas com animações de entrada e saída) e **Modo Avançado** (linha do tempo com keyframes).
 
-> **Estado atual: Fase 0 (fundação).** Já existem Docker Compose (Node + PostgreSQL), login por perfis, o formato de projeto em JSON e o cadastro de fontes. O editor visual, a exportação e os templates chegam nas próximas fases (veja o fim deste arquivo).
+> **Estado atual: Fase 1 (Modo Básico + exportação HTML5).** Além da fundação (Docker Compose, login por perfis, formato de projeto em JSON, cadastro de fontes), já existem o editor do Modo Básico e a exportação do banner em ZIP, com texto convertido em SVG e verificação de peso. Clientes, campanhas e templates chegam na Fase 2 (veja o fim deste arquivo).
 
 ## Como rodar (Docker)
 
@@ -70,6 +70,19 @@ Todo projeto é um documento JSON validado por `zod` em `shared/src/project.ts`,
 
 `checkProject` devolve erros (bloqueiam o salvamento) e avisos (por exemplo, animação com mais de 15 s no total, a menos que o loop seja infinito). O salvamento usa controle de versão otimista: se outra pessoa salvou antes, a API responde `409`.
 
+## Editor do Modo Básico (Fase 1)
+
+Em **Projetos**, crie um projeto (mídia avulsa ou de divulgação, cliente obrigatório, assunto só na avulsa) e clique no nome para abrir o editor:
+
+- **Camadas**: texto, imagem (PNG, JPG ou WebP), botão e forma (retângulo ou elipse). Arraste no palco para mover, use as alças para redimensionar (Shift nos cantos mantém a proporção), setas do teclado movem 1 px (Shift: 10 px). Atalhos: Ctrl+Z / Ctrl+Y, Ctrl+S, Ctrl+D (duplicar), Delete.
+- **Telas**: janelas de tempo; cada camada pertence a uma tela e tem tempo de entrada e saída. Mudar início ou duração da tela acompanha as camadas dela.
+- **Animações**: entrada (fade, deslizar das quatro direções, zoom) e saída, cada uma com duração, atraso e aceleração.
+- **Loop**: número de vezes (a última passada termina no quadro final) ou infinito. Aviso se passar de 15 s no total.
+- **Prévia**: o palco mostra o mesmo HTML que será exportado; a linha do tempo permite reproduzir e posicionar em qualquer instante.
+- **Exportar**: a aba *Exportar* confere peso (somado sem compressão) e avisos e baixa o ZIP `mdivul_...`/`mavul_...` com `index.html` na raiz. Imagens são otimizadas (reduzidas ao tamanho exibido, com qualidade reduzida automaticamente se preciso para caber no limite). Passando do limite, o download exige confirmação.
+
+Como o texto vira contorno SVG (sem fonte embutida), o texto não tem **ligaduras** (fi, fl…) e o kerning usa só a tabela da fonte. Imagens SVG e GIF ainda não são aceitas.
+
 ## Formatos, pesos e nomes de ZIP
 
 Os limites valem para o conteúdo do ZIP **sem compressão** (1 KB = 1000 bytes; se o ad server contar de outro jeito, ajustar em `shared/src/formats.ts`).
@@ -123,7 +136,7 @@ web/      interface React + Vite (pt-BR)
 
 | Fase | Entrega |
 |---|---|
-| 1 | Modo Básico (editor por telas/camadas) e exportação HTML5 em ZIP, com texto convertido em SVG e verificação de peso. Teste real num ad server. |
+| 1 | **Entregue** (falta o teste real do banner no ad server): Modo Básico (editor por telas/camadas) e exportação HTML5 em ZIP, com texto convertido em SVG e verificação de peso. |
 | 2 | Clientes e campanhas, templates por formato, mídia de divulgação com os 3 ZIPs e lista de criativos. |
 | 3 | Modo Avançado (linha do tempo e keyframes, animação de texto por letra/linha). |
 | 4 | Conversão para vídeo MP4 (Chromium + FFmpeg, 29,97 fps, uma faixa de áudio por projeto). |

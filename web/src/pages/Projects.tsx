@@ -1,5 +1,6 @@
-import { CUSTOM_FORMAT_ID, CUSTOM_MAX_SIZE, CUSTOM_MIN_SIZE, DISPLAY_FORMATS, dimensionsLabel } from '@bannerfront/shared';
+import { CUSTOM_FORMAT_ID, CUSTOM_MAX_SIZE, CUSTOM_MIN_SIZE, DISPLAY_FORMATS, DIVULGACAO_FORMAT_IDS, dimensionsLabel } from '@bannerfront/shared';
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { Link } from 'react-router-dom';
 import { api, errorMessage } from '../api';
 import { useAuth } from '../auth';
 
@@ -8,6 +9,7 @@ interface ProjectSummary {
   name: string;
   client: string | null;
   subject: string | null;
+  media: 'divulgacao' | 'avulsa';
   kind: 'basic' | 'advanced';
   formatId: string;
   width: number;
@@ -17,6 +19,7 @@ interface ProjectSummary {
 }
 
 const KIND_LABEL = { basic: 'Modo Básico', advanced: 'Modo Avançado' } as const;
+const MEDIA_LABEL = { divulgacao: 'Mídia de divulgação', avulsa: 'Mídia avulsa' } as const;
 const fmtDate = (iso: string) => new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
 
 export function Projects() {
@@ -71,14 +74,17 @@ export function Projects() {
         ) : (
           <table>
             <thead>
-              <tr><th>Nome</th><th>Cliente</th><th>Tipo</th><th>Formato</th><th>Atualizado</th><th /></tr>
+              <tr><th>Nome</th><th>Cliente</th><th>Mídia</th><th>Formato</th><th>Atualizado</th><th /></tr>
             </thead>
             <tbody>
               {projects.map((p) => (
                 <tr key={p.id}>
-                  <td>{p.name}{p.subject && <div className="muted small">{p.subject}</div>}</td>
+                  <td>
+                    {p.kind === 'basic' ? <Link to={`/projetos/${p.id}`}>{p.name}</Link> : p.name}
+                    {p.subject && <div className="muted small">{p.subject}</div>}
+                  </td>
                   <td>{p.client ?? '—'}</td>
-                  <td>{KIND_LABEL[p.kind]}</td>
+                  <td>{MEDIA_LABEL[p.media]}<div className="muted small">{KIND_LABEL[p.kind]}</div></td>
                   <td>{dimensionsLabel(p.width, p.height)}</td>
                   <td>{fmtDate(p.updatedAt)}</td>
                   <td className="right">{can('projects:delete') && <button className="danger" onClick={() => void remove(p)}>Excluir</button>}</td>
@@ -87,7 +93,6 @@ export function Projects() {
             </tbody>
           </table>
         )}
-        <p className="muted small">O editor visual chega na Fase 1. Por enquanto, os projetos já são criados e salvos no formato definitivo.</p>
       </div>
     </>
   );
@@ -97,12 +102,18 @@ function NewProject({ onCreated }: { onCreated: () => void }) {
   const [name, setName] = useState('');
   const [client, setClient] = useState('');
   const [subject, setSubject] = useState('');
-  const [kind, setKind] = useState<'basic' | 'advanced'>('basic');
+  const [media, setMedia] = useState<'divulgacao' | 'avulsa'>('avulsa');
   const [formatId, setFormatId] = useState<string>(DISPLAY_FORMATS[0]!.id);
   const [width, setWidth] = useState(970);
   const [height, setHeight] = useState(250);
   const [error, setError] = useState<string | null>(null);
   const custom = formatId === CUSTOM_FORMAT_ID;
+  const formats = media === 'divulgacao' ? DISPLAY_FORMATS.filter((f) => (DIVULGACAO_FORMAT_IDS as readonly string[]).includes(f.id)) : DISPLAY_FORMATS;
+
+  function changeMedia(next: 'divulgacao' | 'avulsa') {
+    setMedia(next);
+    if (next === 'divulgacao' && !(DIVULGACAO_FORMAT_IDS as readonly string[]).includes(formatId)) setFormatId(DIVULGACAO_FORMAT_IDS[0]);
+  }
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -110,9 +121,10 @@ function NewProject({ onCreated }: { onCreated: () => void }) {
     try {
       await api('POST', '/api/projects', {
         name,
-        client: client || undefined,
-        subject: subject || undefined,
-        kind,
+        client,
+        subject: media === 'avulsa' ? subject : undefined,
+        media,
+        kind: 'basic',
         formatId,
         ...(custom ? { width, height } : {}),
       });
@@ -125,22 +137,24 @@ function NewProject({ onCreated }: { onCreated: () => void }) {
   return (
     <form className="card grid" onSubmit={submit}>
       <label>Nome do projeto<input value={name} onChange={(e) => setName(e.target.value)} required maxLength={160} /></label>
-      <label>Cliente<input value={client} onChange={(e) => setClient(e.target.value)} maxLength={120} /></label>
-      <label>Assunto <span className="muted">(só mídia avulsa)</span><input value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={120} /></label>
       <label>
-        Ferramenta
-        <select value={kind} onChange={(e) => setKind(e.target.value as 'basic' | 'advanced')}>
-          <option value="basic">Modo Básico</option>
-          <option value="advanced">Modo Avançado</option>
+        Tipo de mídia
+        <select value={media} onChange={(e) => changeMedia(e.target.value as 'divulgacao' | 'avulsa')}>
+          <option value="avulsa">Mídia avulsa (qualquer formato)</option>
+          <option value="divulgacao">Mídia de divulgação (Billboard, Retângulo Médio, Mobile)</option>
         </select>
       </label>
+      <label>Cliente<input value={client} onChange={(e) => setClient(e.target.value)} required maxLength={120} /></label>
+      {media === 'avulsa' && (
+        <label>Assunto<input value={subject} onChange={(e) => setSubject(e.target.value)} required maxLength={120} /></label>
+      )}
       <label>
         Formato
         <select value={formatId} onChange={(e) => setFormatId(e.target.value)}>
-          {DISPLAY_FORMATS.map((f) => (
+          {formats.map((f) => (
             <option key={f.id} value={f.id}>{f.label} ({f.width}x{f.height})</option>
           ))}
-          <option value={CUSTOM_FORMAT_ID}>Dimensões livres</option>
+          {media === 'avulsa' && <option value={CUSTOM_FORMAT_ID}>Dimensões livres</option>}
         </select>
       </label>
       {custom && (
@@ -150,6 +164,7 @@ function NewProject({ onCreated }: { onCreated: () => void }) {
         </div>
       )}
       {error && <p className="error">{error}</p>}
+      <p className="muted small">O projeto é criado no Modo Básico. O Modo Avançado chega numa fase posterior.</p>
       <div><button className="primary">Criar projeto</button></div>
     </form>
   );
