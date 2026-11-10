@@ -19,12 +19,11 @@ interface FontRow {
   glyph_count: number;
   source: string;
   license_confirmed: boolean;
-  license_origin: string | null;
   created_at: Date;
 }
 
 const COLUMNS =
-  'id, family, style, weight, italic, format, file_name, sha256, bytes, glyph_count, source, license_confirmed, license_origin, created_at';
+  'id, family, style, weight, italic, format, file_name, sha256, bytes, glyph_count, source, license_confirmed, created_at';
 
 const toApi = (f: FontRow) => ({
   id: f.id,
@@ -37,7 +36,6 @@ const toApi = (f: FontRow) => ({
   bytes: f.bytes,
   glyphCount: f.glyph_count,
   source: f.source,
-  licenseOrigin: f.license_origin,
   createdAt: f.created_at.toISOString(),
 });
 
@@ -87,11 +85,6 @@ export function registerFontRoutes(app: FastifyInstance, { pool, config }: AppCo
     if (fields.licenseConfirmed !== 'true') {
       return reply.code(400).send({ error: 'license_required', message: 'Confirme que você tem licença para usar esta fonte.' });
     }
-    const licenseOrigin = (fields.licenseOrigin ?? '').trim().slice(0, 300);
-    if (licenseOrigin.length < 3) {
-      return reply.code(400).send({ error: 'license_required', message: 'Informe de onde vem a fonte e qual é a licença.' });
-    }
-
     let info;
     try {
       info = inspectFont(file.data);
@@ -116,8 +109,8 @@ export function registerFontRoutes(app: FastifyInstance, { pool, config }: AppCo
     try {
       const { rows } = await pool.query<FontRow>(
         `INSERT INTO fonts (family, style, weight, italic, format, file_name, sha256, bytes, glyph_count,
-                            source, license_confirmed, license_origin, uploaded_by)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'upload', true, $10, $11)
+                            source, license_confirmed, uploaded_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'upload', true, $10)
          RETURNING ${COLUMNS}`,
         [
           info.family,
@@ -129,14 +122,12 @@ export function registerFontRoutes(app: FastifyInstance, { pool, config }: AppCo
           info.sha256,
           info.bytes,
           info.glyphCount,
-          licenseOrigin,
           request.user!.id,
         ],
       );
       await audit(pool, request.user!.id, 'font_uploaded', 'font', rows[0]!.id, {
         family: info.family,
         style: info.style,
-        licenseOrigin,
       });
       return reply.code(201).send({ font: toApi(rows[0]!) });
     } catch (err) {

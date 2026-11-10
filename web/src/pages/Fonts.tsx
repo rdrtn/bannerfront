@@ -13,7 +13,6 @@ interface FontItem {
   bytes: number;
   glyphCount: number;
   source: 'upload' | 'google';
-  licenseOrigin: string | null;
 }
 
 const cssFamily = (id: string) => `bf-font-${id}`;
@@ -65,7 +64,7 @@ export function Fonts() {
         ) : (
           <table>
             <thead>
-              <tr><th>Família</th><th>Estilo</th><th>Prévia</th><th>Arquivo</th><th>Licença / origem</th><th /></tr>
+              <tr><th>Família</th><th>Estilo</th><th>Prévia</th><th>Arquivo</th><th>Origem</th><th /></tr>
             </thead>
             <tbody>
               {fonts.map((f) => (
@@ -74,7 +73,7 @@ export function Fonts() {
                   <td>{f.style} <span className="muted small">({f.weight})</span></td>
                   <td style={{ fontFamily: `"${cssFamily(f.id)}"`, fontSize: 20 }}>Aa Texto de exemplo</td>
                   <td className="small">{f.format.toUpperCase()} · {kb(f.bytes)} · {f.glyphCount} glifos</td>
-                  <td className="small">{f.source === 'google' ? 'Google Fonts' : f.licenseOrigin}</td>
+                  <td className="small">{f.source === 'google' ? 'Google Fonts' : 'Enviada por usuário'}</td>
                   <td className="right">{can('system:manage') && <button className="danger" onClick={() => void remove(f)}>Remover</button>}</td>
                 </tr>
               ))}
@@ -88,7 +87,6 @@ export function Fonts() {
 
 function Upload({ onUploaded }: { onUploaded: () => Promise<void> }) {
   const [file, setFile] = useState<File | null>(null);
-  const [origin, setOrigin] = useState('');
   const [confirmed, setConfirmed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
@@ -100,13 +98,11 @@ function Upload({ onUploaded }: { onUploaded: () => Promise<void> }) {
     setMessage(null);
     const form = new FormData();
     form.set('licenseConfirmed', String(confirmed));
-    form.set('licenseOrigin', origin);
     form.set('file', file);
     try {
       const r = await api<{ font: FontItem }>('POST', '/api/fonts', form);
       setMessage({ ok: true, text: `Fonte ${r.font.family} ${r.font.style} cadastrada.` });
       setFile(null);
-      setOrigin('');
       setConfirmed(false);
       e.currentTarget.reset();
       await onUploaded();
@@ -123,10 +119,6 @@ function Upload({ onUploaded }: { onUploaded: () => Promise<void> }) {
       <label>
         Arquivo <span className="muted">(TTF, OTF ou WOFF, um estilo por arquivo)</span>
         <input type="file" accept=".ttf,.otf,.woff" onChange={(e) => setFile(e.target.files?.[0] ?? null)} required />
-      </label>
-      <label>
-        Origem e licença <span className="muted">(ex.: "Adquirida da Fonte X, licença desktop e web")</span>
-        <input value={origin} onChange={(e) => setOrigin(e.target.value)} minLength={3} maxLength={300} required />
       </label>
       <label className="check">
         <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} required />

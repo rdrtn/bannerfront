@@ -283,7 +283,7 @@ describe.skipIf(!TEST_DATABASE_URL)('API (precisa de TEST_DATABASE_URL)', () => 
       const { payload, headers } = multipart(fields, buf ? { name, data: buf } : undefined);
       return env.app.inject({ method: 'POST', url: '/api/fonts', payload, headers: { ...headers, cookie } });
     };
-    const license = { licenseConfirmed: 'true', licenseOrigin: 'Google Fonts, OFL' };
+    const license = { licenseConfirmed: 'true' };
 
     it('cadastra uma fonte válida, lê os metadados e serve o arquivo', async () => {
       const cookie = await userSession(env, 'atendimento');
@@ -304,12 +304,11 @@ describe.skipIf(!TEST_DATABASE_URL)('API (precisa de TEST_DATABASE_URL)', () => 
       expect(stored).toHaveLength(1);
     });
 
-    it('exige confirmação de licença e origem', async () => {
+    it('exige a confirmação de licença', async () => {
       const cookie = await userSession(env, 'designer');
       const buf = makeTestFont('Fonte Teste Dois');
       expect((await upload(cookie, buf, {})).json().error).toBe('license_required');
-      expect((await upload(cookie, buf, { licenseConfirmed: 'false', licenseOrigin: 'x'.repeat(10) })).statusCode).toBe(400);
-      expect((await upload(cookie, buf, { licenseConfirmed: 'true', licenseOrigin: '' })).statusCode).toBe(400);
+      expect((await upload(cookie, buf, { licenseConfirmed: 'false' })).statusCode).toBe(400);
       expect((await call('GET', '/api/fonts', cookie)).json().fonts).toHaveLength(0);
     });
 

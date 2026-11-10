@@ -54,7 +54,7 @@ A matriz fica em `shared/src/permissions.ts` e é usada pelo servidor (que é qu
 
 ## Fontes
 
-Qualquer usuário pode enviar fontes **TTF, OTF ou WOFF** (WOFF2 e coleções `.ttc` não são aceitos), um estilo por arquivo. No envio é obrigatório confirmar que há licença de uso e informar a origem; a confirmação fica registrada junto da fonte. O servidor valida o arquivo, lê família, estilo e peso, recusa fontes cuja licença proíbe incorporação (`fsType` restrito) e não aceita o mesmo arquivo duas vezes.
+Qualquer usuário pode enviar fontes **TTF, OTF ou WOFF** (WOFF2 e coleções `.ttc` não são aceitos), um estilo por arquivo. No envio é obrigatório marcar a confirmação de que há licença de uso; a confirmação fica registrada junto da fonte e no registro de atividades. O servidor valida o arquivo, lê família, estilo e peso, recusa fontes cuja licença proíbe incorporação (`fsType` restrito) e não aceita o mesmo arquivo duas vezes.
 
 A cópia local do Google Fonts está prevista (campo `source = 'google'` já existe no banco), mas **ainda não foi importada**.
 

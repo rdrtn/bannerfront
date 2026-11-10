@@ -1,5 +1,11 @@
 import { createHash } from 'node:crypto';
-import * as opentype from 'opentype.js';
+import * as opentypeNs from 'opentype.js';
+import type { Font } from 'opentype.js';
+
+// opentype.js 2.x é publicado como UMD: no Node (fora de bundlers) as funções chegam em `default`.
+// Aceita os dois formatos para funcionar tanto em desenvolvimento quanto no build/Docker.
+const opentype: typeof opentypeNs =
+  typeof opentypeNs.parse === 'function' ? opentypeNs : (opentypeNs as unknown as { default: typeof opentypeNs }).default;
 
 export type FontFormat = 'ttf' | 'otf' | 'woff';
 
@@ -30,7 +36,7 @@ export function sniffFontFormat(buf: Buffer): FontFormat {
 
 type LocalizedNames = Record<string, Record<string, string>> | undefined;
 
-function pickName(font: opentype.Font, ...keys: string[]): string | undefined {
+function pickName(font: Font, ...keys: string[]): string | undefined {
   const tables: LocalizedNames[] = [font.names.windows, font.names.macintosh, font.names.unicode];
   for (const key of keys) {
     for (const table of tables) {
@@ -46,7 +52,7 @@ function pickName(font: opentype.Font, ...keys: string[]): string | undefined {
 export function inspectFont(buf: Buffer): FontInfo {
   const format = sniffFontFormat(buf);
 
-  let font: opentype.Font;
+  let font: Font;
   try {
     const ab = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer;
     font = opentype.parse(ab);
